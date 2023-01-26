@@ -1,36 +1,67 @@
 from flask import Flask, request
-import tensorflow as tf
+from sgnlp.models.csgec import (
+    CsgConfig,
+    CsgModel,
+    CsgTokenizer,
+    CsgecPreprocessor,
+    CsgecPostprocessor,
+    download_tokenizer_files,
+)
+from sgnlp.models.coherence_momentum import CoherenceMomentumModel, CoherenceMomentumConfig, \
+    CoherenceMomentumPreprocessor
 
 app = Flask(__name__)
 
-def read(filename):
-    text = ""
-    with open(filename) as file: text = file.read()
-    return text
+config = CsgConfig.from_pretrained("https://storage.googleapis.com/sgnlp/models/csgec/config.json")
+model = CsgModel.from_pretrained(
+    "https://storage.googleapis.com/sgnlp/models/csgec/pytorch_model.bin",
+    config=config,
+)
+download_tokenizer_files(
+    "https://storage.googleapis.com/sgnlp/models/csgec/src_tokenizer/",
+    "csgec_src_tokenizer",
+)
+download_tokenizer_files(
+    "https://storage.googleapis.com/sgnlp/models/csgec/ctx_tokenizer/",
+    "csgec_ctx_tokenizer",
+)
+download_tokenizer_files(
+    "https://storage.googleapis.com/sgnlp/models/csgec/tgt_tokenizer/",
+    "csgec_tgt_tokenizer",
+)
+src_tokenizer = CsgTokenizer.from_pretrained("csgec_src_tokenizer")
+ctx_tokenizer = CsgTokenizer.from_pretrained("csgec_ctx_tokenizer")
+tgt_tokenizer = CsgTokenizer.from_pretrained("csgec_tgt_tokenizer")
 
+preprocessor = CsgecPreprocessor(src_tokenizer=src_tokenizer, ctx_tokenizer=ctx_tokenizer)
+postprocessor = CsgecPostprocessor(tgt_tokenizer=tgt_tokenizer)
 
-tokenizer = tf.keras.preprocessing.text.tokenizer_from_json(read("models/tokenizer.json"))
+config1 = CoherenceMomentumConfig.from_pretrained(
+    "https://storage.googleapis.com/sgnlp/models/coherence_momentum/config.json"
+)
+model1 = CoherenceMomentumModel.from_pretrained(
+    "https://storage.googleapis.com/sgnlp/models/coherence_momentum/pytorch_model.bin",
+    config=config1
+)
 
-model = tf.keras.Sequential([
-    tf.keras.layers.Embedding(2000, 64), # embedding layer
-    tf.keras.layers.Bidirectional(tf.keras.layers.LSTM(64, dropout=0.2, recurrent_dropout=0.2)), # LSTM layer
-    tf.keras.layers.Dropout(rate=0.2), # dropout layer
-    tf.keras.layers.Dense(64, activation='relu'), # fully connected layer
-    tf.keras.layers.Dense(4, activation='sigmoid') # final layer
-])
+preprocessor1 = CoherenceMomentumPreprocessor(config1.model_size, config1.max_len)
 
-model.load_weights("models/mbti-bdlstm.h5")
-
-@app.route('/')
-def hello_world():
-    return '<h1>Hello World!</h1>'
-
-@app.route("/mbti", methods=["GET"])
-def mbti():
+@app.route('/grammar', methods=['GET'])
+def grammar():
     text = request.args.get("text")
-    ei, sn, ft, jp = model.predict(tf.keras.preprocessing.sequence.pad_sequences(tokenizer.texts_to_sequences([text]), maxlen=100, padding='post', truncating='post')).round().astype(int)[0]
-    print("IE"[ei]+"NS"[sn]+"TF"[ft]+"PJ"[jp])
-    return "IE"[ei]+"NS"[sn]+"TF"[ft]+"PJ"[jp]
+    batch_source_ids, batch_context_ids = preprocessor([text])
+    predicted_ids = model.decode(batch_source_ids, batch_context_ids)
+    predicted_texts = postprocessor(predicted_ids)
+    return predicted_texts[0]
+
+@app.route("/coherence", methods=["GET"])
+def coherence():
+    text = request.args.get("text")
+    text1_tensor = preprocessor1([text])
+
+    text1_score = model1.get_main_score(text1_tensor["tokenized_texts"]).item()
+
+    return text1_score
 
 
 if __name__ == '__main__':
