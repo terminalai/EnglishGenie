@@ -60,6 +60,7 @@ qa_pipeline2 = pipeline(
     model="mrm8488/t5-base-e2e-question-generation"
 )
 
+
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
 model = AutoModel.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
 kw_model = KeyBERT()
