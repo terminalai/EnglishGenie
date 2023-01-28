@@ -60,6 +60,7 @@ qa_pipeline2 = pipeline(
     model="TuhinColumbia/QAGenControlCode"
 )
 
+
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
 model = AutoModel.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
 kw_model = KeyBERT()
