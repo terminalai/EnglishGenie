@@ -56,6 +56,10 @@ qa_pipeline = pipeline(
     tokenizer="mrm8488/spanbert-finetuned-squadv2"
 )
 
+qa_pipeline2 = pipeline(
+    model="TuhinColumbia/QAGenControlCode"
+)
+
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
 model = AutoModel.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
 kw_model = KeyBERT()
@@ -78,11 +82,15 @@ def coherence():
     return text1_score
 
 @app.route("/answer", methods=["GET"])
-def answer(passage, question):
+def answer():
+    passage = request.form.getlist('passage')
+    question = request.form.getlist('question')
     return qa_pipeline({'context': str(passage),'question': str(question)})['answer']
 
 @app.route("/similarity", methods=["GET"])
-def similarity(userText, answerText):
+def similarity():
+    userText = request.form.getlist('userText')
+    answerText = request.form.getlist('answerText')
     userText = kw_model.extract_keywords(userText, keyphrase_ngram_range=(1,1), stop_words='english', use_maxsum=True, nr_candidates=20, top_n=10)
     userText = ' '.join([x for x, y in userText])
     answerText = kw_model.extract_keywords(answerText, keyphrase_ngram_range=(1,1), stop_words='english', use_maxsum=True, nr_candidates=20, top_n=10)
@@ -107,6 +115,13 @@ def similarity(userText, answerText):
     mean_pooled = summed / summed_mask
     mean_pooled = mean_pooled.detach().numpy()
     return cosine_similarity([mean_pooled[0]], mean_pooled[1:])[0]
+
+@app.route("/question", methods=["GET"])
+def question():
+    text = request.args.get("text")
+    question = qa_pipeline2(text)[0]['generated_text']
+    question = question[:(question.index('?')+1)]
+    return question
 
 if __name__ == '__main__':
     app.run()
