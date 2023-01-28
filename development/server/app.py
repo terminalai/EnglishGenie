@@ -57,7 +57,7 @@ qa_pipeline = pipeline(
 )
 
 qa_pipeline2 = pipeline(
-    model="TuhinColumbia/QAGenControlCode"
+    model="mrm8488/t5-base-e2e-question-generation"
 )
 
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
@@ -119,9 +119,8 @@ def similarity():
 @app.route("/question", methods=["GET"])
 def question():
     text = request.args.get("text")
-    question = qa_pipeline2(text)[0]['generated_text']
-    question = question[:(question.index('?')+1)]
-    return question
+    question = qa_pipeline2(text)
+    return question[0]['generated_text']
 
 if __name__ == '__main__':
     app.run()
