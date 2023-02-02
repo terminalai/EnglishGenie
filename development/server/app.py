@@ -1,4 +1,10 @@
 from flask import Flask, request
+import contextlib
+from flask_cors import CORS, cross_origin
+import json
+
+from question import Question
+from mcq_generation import MCQGenerator
 from sgnlp.models.csgec import (
     CsgConfig,
     CsgModel,
@@ -15,6 +21,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from keybert import KeyBERT
 
 app = Flask(__name__)
+cors = CORS(app)
+
+MQC_Generator = MCQGenerator()
 
 config = CsgConfig.from_pretrained("https://storage.googleapis.com/sgnlp/models/csgec/config.json")
 model = CsgModel.from_pretrained(
@@ -66,6 +75,7 @@ model = AutoModel.from_pretrained('sentence-transformers/bert-base-nli-mean-toke
 kw_model = KeyBERT()
 
 @app.route('/grammar', methods=['GET'])
+@cross_origin()
 def grammar():
     text = request.args.get("text")
     batch_source_ids, batch_context_ids = preprocessor([text])
@@ -74,6 +84,7 @@ def grammar():
     return predicted_texts[0]
 
 @app.route("/coherence", methods=["GET"])
+@cross_origin()
 def coherence():
     text = request.args.get("text")
     text1_tensor = preprocessor1([text])
@@ -83,12 +94,14 @@ def coherence():
     return text1_score
 
 @app.route("/answer", methods=["GET"])
+@cross_origin()
 def answer():
     passage = request.form.getlist('passage')
     question = request.form.getlist('question')
     return qa_pipeline({'context': str(passage),'question': str(question)})['answer']
 
 @app.route("/similarity", methods=["GET"])
+@cross_origin()
 def similarity():
     userText = request.form.getlist('userText')
     answerText = request.form.getlist('answerText')
@@ -118,10 +131,26 @@ def similarity():
     return cosine_similarity([mean_pooled[0]], mean_pooled[1:])[0]
 
 @app.route("/question", methods=["GET"])
+@cross_origin()
 def question():
     text = request.args.get("text")
     question = qa_pipeline2(text)
     return question[0]['generated_text']
+
+@app.route("/generate", methods=["POST"])
+@cross_origin()
+def generate():
+    #postman
+    # text = request.form['text']
+
+    requestJson = json.loads(request.data)
+    text = requestJson['text']
+    count = 10 if requestJson['count'] == '' else int(requestJson['count'])
+    
+    questions = MQC_Generator.generate_mcq_questions(text, count)
+    result = list(map(lambda x: json.dumps(x.__dict__), questions))
+
+    return json.dumps(result)
 
 if __name__ == '__main__':
     app.run()
