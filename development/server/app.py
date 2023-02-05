@@ -81,7 +81,7 @@ def grammar():
     batch_source_ids, batch_context_ids = preprocessor([text])
     predicted_ids = model.decode(batch_source_ids, batch_context_ids)
     predicted_texts = postprocessor(predicted_ids)
-    return predicted_texts[0]
+    return predicted_texts
 
 @app.route("/coherence", methods=["GET"])
 @cross_origin()
