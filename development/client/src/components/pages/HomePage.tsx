@@ -10,16 +10,20 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { ChangeEvent, useEffect, useState } from "react";
+import axios from "axios";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import QuestionCard from "../elements/QuestionCard";
 
 function HomePage() {
-  const [questionIds, setQuestionIds] = useState(new Array<number>());
+  const [questionIds, setQuestionIds] = useState(new Array<[number, string]>());
   const [lastQuestionId, setLastQuestionId] = useState(0);
 
   const [passageEmpty, setPassageEmpty] = useState(true);
   const [cardState, setCardState] = useState(0);
   const [listTransitioning, setListTransitioning] = useState(0);
+  const [passageContent, setPassageContent] = useState("");
+
+  const passageRef = useRef<HTMLInputElement>();
 
   useEffect(() => {
     if (questionIds.length === 0) {
@@ -33,15 +37,25 @@ function HomePage() {
   }, []);
 
   function checkEmpty(event: ChangeEvent<HTMLInputElement>) {
+    setPassageContent(event.target.value.trim())
     setPassageEmpty(event.target.value.trim().length === 0);
   }
-  function addQuestion() {
+  function addQuestion(content: string = "") {
     setLastQuestionId(lastQuestionId + 1);
-    setQuestionIds([...questionIds, lastQuestionId]);
+    setQuestionIds([...questionIds, [lastQuestionId, content]]);
   }
 
   function doUnmount(id: number) {
-    setQuestionIds(questionIds.filter((questionId) => questionId !== id));
+    setQuestionIds(questionIds.filter((questionId) => questionId[0] !== id));
+  }
+
+  async function fetchQuestion() {
+    const refContent = passageRef.current
+    if (!refContent) return;
+    const resp = await axios.get("http://localhost:5000/question", {params: {text: refContent.value}})
+    if (resp.status !== 200) return;
+    const question = resp.data
+    addQuestion(question)
   }
 
   const initialStyle = css({
@@ -76,15 +90,16 @@ function HomePage() {
           rows={10}
           fullWidth
           onChange={checkEmpty}
+          inputRef={passageRef}
         />
       </CardContent>
       <Collapse in={!passageEmpty}>
         <CardContent sx={{ display: "flex", alignItems: "baseline" }}>
-          <Button variant="contained">Generate Question</Button>
+          <Button variant="contained" onClick={fetchQuestion}>Generate Question</Button>
           <Typography sx={{ textSize: "10px", height: "100%" }} ml={3} mr={3}>
             <i>or</i>
           </Typography>
-          <Button variant="contained" onClick={addQuestion}>
+          <Button variant="contained" onClick={() => addQuestion()}>
             Add Question
           </Button>
           <Box sx={{ flexGrow: 1 }}></Box>
@@ -99,12 +114,14 @@ function HomePage() {
           </Button>
         </CardContent>
 
-        {questionIds.map((questionId, index) => (
+        {questionIds.map(([questionId, initialContent], index) => (
           <QuestionCard
             number={index + 1}
+            passageContent={passageContent}
             doUnmount={doUnmount}
             key={questionId}
             id={questionId}
+            initialContent={initialContent}
             listTransitioning={listTransitioning}
             setListTransitioning={setListTransitioning}
           />

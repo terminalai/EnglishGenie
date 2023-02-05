@@ -1,4 +1,5 @@
 from flask import Flask, request
+from flask_cors import CORS
 from sgnlp.models.csgec import (
     CsgConfig,
     CsgModel,
@@ -15,6 +16,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from keybert import KeyBERT
 
 app = Flask(__name__)
+CORS(app)
 
 config = CsgConfig.from_pretrained("https://storage.googleapis.com/sgnlp/models/csgec/config.json")
 model = CsgModel.from_pretrained(
@@ -84,14 +86,15 @@ def coherence():
 
 @app.route("/answer", methods=["GET"])
 def answer():
-    passage = request.form.getlist('passage')
-    question = request.form.getlist('question')
+    passage = request.args.get('passage')
+    question = request.args.get('question')
+    print(passage, question)
     return qa_pipeline({'context': str(passage),'question': str(question)})['answer']
 
 @app.route("/similarity", methods=["GET"])
 def similarity():
-    userText = request.form.getlist('userText')
-    answerText = request.form.getlist('answerText')
+    userText = request.args.getlist('userText')
+    answerText = request.args.getlist('answerText')
     userText = kw_model.extract_keywords(userText, keyphrase_ngram_range=(1,1), stop_words='english', use_maxsum=True, nr_candidates=20, top_n=10)
     userText = ' '.join([x for x, y in userText])
     answerText = kw_model.extract_keywords(answerText, keyphrase_ngram_range=(1,1), stop_words='english', use_maxsum=True, nr_candidates=20, top_n=10)
@@ -124,4 +127,4 @@ def question():
     return question[0]['generated_text']
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=5000)

@@ -1,20 +1,22 @@
 module.exports = {
   root: true,
-  env: {
-    node: true,
-  },
+  parser: "@typescript-eslint/parser",
+  plugins: ["@typescript-eslint", "react", "@emotion/eslint-plugin"],
   extends: [
-    "plugin:vue/essential",
-    "@vue/typescript",
-    "@vue/typescript/recommended",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
   ],
-  parserOptions: {
-    ecmaVersion: 2020,
+  settings: {
+    react: {
+      version: "detect",
+    },
   },
   rules: {
-    "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
-    "no-debugger": process.env.NODE_ENV === "production" ? "warn" : "off",
-    quotes: ["error", "double", {allowTemplateLiterals: true}],
-    semi: "error",
+    "react/no-unknown-property": ["error", { ignore: ["css"] }],
+  },
+  env: {
+    node: true,
   },
 };

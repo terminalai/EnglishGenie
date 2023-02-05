@@ -1,7 +1,7 @@
 FROM node:alpine AS base
 
 RUN npm i -g pnpm
-RUN apk --no-cache add --virtual build-deps build-base python3
+RUN apk --no-cache add --virtual build-deps build-base
 
 FROM base AS dependencies
 

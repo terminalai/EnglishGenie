@@ -13,7 +13,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import axios from "axios";
+import { useEffect, useRef, useState } from "react";
 
 function QuestionCard(props: {
   number: number;
@@ -21,10 +22,16 @@ function QuestionCard(props: {
   id: number;
   listTransitioning: number;
   setListTransitioning: (value: number) => void;
+  passageContent: string;
+  initialContent: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [allowAnswers, setAllowAnswers] = useState(false);
   const [allowCheck, setAllowCheck] = useState(false);
+  const [aiAnswer, setAiAnswer] = useState<[string, number, number]>(["", 0, 0]);
+
+  const questionRef = useRef<HTMLInputElement>();
+  const answerRef = useRef<HTMLInputElement>();
   function onDelete() {
     props.setListTransitioning(props.listTransitioning + 1);
     setCurrentStyle(2);
@@ -68,6 +75,11 @@ function QuestionCard(props: {
     transition: opacity 250ms ease-in-out;
   `;
 
+  useEffect(() => {
+    if (questionRef.current) questionRef.current.value = props.initialContent;
+    if (props.initialContent.trim().length > 0) setAllowAnswers(true);
+  }, []);
+
   // const checkQuestionAnim = css({
   //   transform: "scale(1, 1)",
   //   opacity: 1,
@@ -79,6 +91,20 @@ function QuestionCard(props: {
   //   transition: transform 250ms ease-in-out, opacity 100ms ease-in-out;
   //   ${allowCheck && checkQuestionAnim};
   // `
+
+  async function checkAnswer() {
+    if (!questionRef.current || !answerRef.current) return;
+    const question = questionRef.current.value;
+    const answer = answerRef.current.value;
+
+    const aiAnswer = await axios.get("http://localhost:5000/answer", {params: {question, passage: props.passageContent}})
+    console.log(aiAnswer)
+
+    const grammarScore = await axios.get("http://localhost:5000/grammar", {params: {text: answer}})
+    console.log(grammarScore)
+
+    const similarity = await axios.get("http://localhost:5000/similarity", {params: {userText: answer, answerText: aiAnswer.data.answer}})
+  }
 
   return (
     <Collapse in={currentStyle === 1}>
@@ -104,7 +130,7 @@ function QuestionCard(props: {
         <CardContent sx={{ flexGrow: 1 }}>
           <Typography variant="h6">
             <i>
-              Question <text css={listNumberLabelStyle}>{props.number}</text>
+              Question <i css={listNumberLabelStyle}>{props.number}</i>
             </i>
           </Typography>
         </CardContent>
@@ -128,6 +154,7 @@ function QuestionCard(props: {
               id="outlined-textarea"
               multiline
               placeholder="Enter question here..."
+              inputRef={questionRef}
               fullWidth
               onChange={(e) => {
                 setAllowAnswers(e.target.value.trim().length > 0);
@@ -146,6 +173,7 @@ function QuestionCard(props: {
                   sx={{ flexGrow: 1 }}
                   id="outlined-textarea"
                   multiline
+                  inputRef={answerRef}
                   placeholder="What's your answer?"
                   fullWidth
                   onChange={(e) => {
@@ -153,11 +181,18 @@ function QuestionCard(props: {
                   }}
                 />
                 <Collapse in={allowCheck} orientation="horizontal">
-                  <Button sx={{ ml: 2 }} variant="contained">
+                  <Button sx={{ ml: 2 }} variant="contained" onClick={checkAnswer}>
                     Check
                   </Button>
                 </Collapse>
               </Box>
+              <Collapse in={aiAnswer[0].trim().length > 0}>
+                <Typography variant="h6" sx={{ mt: 2 }}>
+                  AI Answer: {aiAnswer[0]}<br />
+                  Your Grammar Score: {aiAnswer[1]}<br />
+                  Your Similarity Score: {aiAnswer[2]}
+                </Typography>
+              </Collapse>
             </Collapse>
           </CardContent>
         </Collapse>

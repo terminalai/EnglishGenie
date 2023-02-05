@@ -2,6 +2,6 @@ version: "3.8"
 
 services:
   frontend:
-    build: ./
+    build: ./client
     ports:
       - 8000:8000
