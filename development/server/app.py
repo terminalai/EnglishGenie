@@ -82,7 +82,7 @@ def coherence():
 
     text1_score = model1.get_main_score(text1_tensor["tokenized_texts"]).item()
 
-    return text1_score
+    return str(text1_score)
 
 @app.route("/answer", methods=["GET"])
 def answer():
@@ -118,7 +118,7 @@ def similarity():
     summed_mask = torch.clamp(mask.sum(1), min=1e-9)
     mean_pooled = summed / summed_mask
     mean_pooled = mean_pooled.detach().numpy()
-    return cosine_similarity([mean_pooled[0]], mean_pooled[1:])[0]
+    return str(cosine_similarity([mean_pooled[0]], mean_pooled[1:])[0][0])
 
 @app.route("/question", methods=["GET"])
 def question():

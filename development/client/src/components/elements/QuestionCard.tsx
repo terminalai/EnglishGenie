@@ -28,7 +28,7 @@ function QuestionCard(props: {
   const [expanded, setExpanded] = useState(false);
   const [allowAnswers, setAllowAnswers] = useState(false);
   const [allowCheck, setAllowCheck] = useState(false);
-  const [aiAnswer, setAiAnswer] = useState<[string, number, number]>(["", 0, 0]);
+  const [aiAnswer, setAiAnswer] = useState<[string, string, number, number]>(["", "", 0, 0]);
 
   const questionRef = useRef<HTMLInputElement>();
   const answerRef = useRef<HTMLInputElement>();
@@ -100,10 +100,16 @@ function QuestionCard(props: {
     const aiAnswer = await axios.get("http://localhost:5000/answer", {params: {question, passage: props.passageContent}})
     console.log(aiAnswer)
 
-    const grammarScore = await axios.get("http://localhost:5000/grammar", {params: {text: answer}})
-    console.log(grammarScore)
+    const grammaticallyCorrect = await axios.get("http://localhost:5000/grammar", {params: {text: answer}})
+    console.log(grammaticallyCorrect)
 
-    const similarity = await axios.get("http://localhost:5000/similarity", {params: {userText: answer, answerText: aiAnswer.data.answer}})
+    const coherenceScore = await axios.get("http://localhost:5000/coherence", {params: {text: answer}})
+    console.log(coherenceScore)
+
+    const similarityScore = await axios.get("http://localhost:5000/similarity", {params: {userText: answer, answerText: aiAnswer.data}})
+    console.log(similarityScore)
+
+    setAiAnswer([aiAnswer.data, grammaticallyCorrect.data, coherenceScore.data, similarityScore.data])
   }
 
   return (
@@ -188,9 +194,11 @@ function QuestionCard(props: {
               </Box>
               <Collapse in={aiAnswer[0].trim().length > 0}>
                 <Typography variant="h6" sx={{ mt: 2 }}>
-                  AI Answer: {aiAnswer[0]}<br />
-                  Your Grammar Score: {aiAnswer[1]}<br />
-                  Your Similarity Score: {aiAnswer[2]}
+                  Grammatically corrected: {aiAnswer[1]}<br />
+                  Your Coherence Score: {aiAnswer[2]}<br />
+                  <br />
+                  The English Genie says: {aiAnswer[0]}<br />
+                  Your Similarity Score: {aiAnswer[3]}<br />
                 </Typography>
               </Collapse>
             </Collapse>

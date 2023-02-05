@@ -27,7 +27,7 @@ function BasePage(props: { children?: React.ReactNode }) {
       >
         <Toolbar sx={{ display: "flex" }}>
           <Typography variant="h6" sx={{ flexGrow: 1, textAlign: "center" }}>
-            NAISC
+            English Genie
           </Typography>
         </Toolbar>
       </AppBar>
