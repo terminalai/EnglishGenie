@@ -62,7 +62,7 @@ qa_pipeline2 = pipeline(
 
 
 tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
-model = AutoModel.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
+model2 = AutoModel.from_pretrained('sentence-transformers/bert-base-nli-mean-tokens')
 kw_model = KeyBERT()
 
 @app.route('/grammar', methods=['GET'])
@@ -106,7 +106,7 @@ def similarity():
 
     tokens['input_ids'] = torch.stack(tokens['input_ids'])
     tokens['attention_mask'] = torch.stack(tokens['attention_mask'])
-    outputs = model(**tokens)
+    outputs = model2(**tokens)
     embeddings = outputs.last_hidden_state
     attention_mask = tokens['attention_mask']
     mask = attention_mask.unsqueeze(-1).expand(embeddings.size()).float()
