@@ -1,10 +1,19 @@
-# National AI Student Challenge
+# Template of Flask Server and Vue.js App
 
-Okay so this is a thing that exists :disappointed:
+## How to Run
 
-Libraries of note (`AI-BRICKS`):
-- [`sgnlp`](https://github.com/aisingapore/sgnlp/)
-- [`seacorenlp`](https://pypi.org/project/seacorenlp/)
+### Server (Flask)
 
+```shell
+$ cd server
+$ pip install -r requirements.txt
+$ python app.py
+```
 
-PeekingDuck also has some bindings that we might be able to use but for now, let's just deal with sgnlp.
+### Client (Vue.js App)
+
+```shell
+$ cd client
+$ npm i
+$ npm run serve
+```
